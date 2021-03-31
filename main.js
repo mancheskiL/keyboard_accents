@@ -1,9 +1,11 @@
 const {
   app,
   BrowserWindow,
-  dialog,
   globalShortcut,
   clipboard,
+  Menu,
+  Tray,
+  nativeImage,
 } = require("electron");
 const path = require("path");
 const robot = require("robotjs");
@@ -12,23 +14,53 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 800,
     height: 600,
-    show: false,
+    show: true,
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      // preload: path.join(__dirname, "preload.js"),
+      nodeIntegration: true,
     },
   });
 
   win.loadFile("index.html");
 }
 
+function createTrayIcon() {
+  // if icon tray seems to disappear in the future
+  // you probably have to give it a "let" variable
+  // in the global scope, so it isn't garbage
+  // collected
+  const iconPath = path.join(__dirname, "16.png");
+  appIcon = new Tray(iconPath);
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: "Open Window",
+      click: () => {
+        createWindow();
+        appIcon.destroy();
+      },
+    },
+    {
+      label: "Quit Akzent",
+      click: () => {
+        app.quit();
+      },
+    },
+  ]);
+
+  appIcon.setToolTip("Keyboard Accent Tray Context");
+  appIcon.setContextMenu(contextMenu);
+}
+
 app.whenReady().then(() => {
-  createWindow();
+  // createWindow();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
   });
+
+  createTrayIcon();
 });
 
 app.on("ready", () => {
@@ -39,7 +71,7 @@ app.on("ready", () => {
     //simulate key press
     setTimeout(() => {
       robot.keyTap("v", "control");
-    }, 150);
+    }, 200);
   });
 });
 
@@ -48,7 +80,6 @@ app.on("will-quit", () => {
 });
 
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
+  //make so tray icon is displayed again
+  createTrayIcon();
 });
